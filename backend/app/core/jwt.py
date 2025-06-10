@@ -1,0 +1,36 @@
+# backend/app/core/jwt.py
+from datetime import datetime, timedelta, timezone
+from typing import Optional, List
+from jose import JWTError, jwt
+from fastapi import HTTPException, status
+from app.config import settings # Our configuration with SECRET_KEY and ALGORITHM
+from pydantic import BaseModel
+
+# Token payload structure (optional, but good for clarity)
+class TokenData(BaseModel):
+    username: Optional[str] = None
+    scopes: List[str] = [] # For role-based authorization later
+
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+    """Creates a JWT access token."""
+    to_encode = data.copy()
+    if expires_delta:
+        expire = datetime.now(timezone.utc) + expires_delta
+    else:
+        expire = datetime.now(timezone.utc) + timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+    to_encode.update({"exp": expire})
+    encoded_jwt = jwt.encode(to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM)
+    return encoded_jwt
+
+def verify_token(token: str, credentials_exception: HTTPException):
+    """Verifies a JWT token and returns the payload."""
+    try:
+        payload = jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.ALGORITHM])
+        username: str = payload.get("sub") # 'sub' is the subject, usually username
+        if username is None:
+            raise credentials_exception
+        # Optionally, extract scopes/roles
+        # token_data = TokenData(username=username, scopes=payload.get("scopes", []))
+        return payload # Return full payload for now, can be refined to TokenData
+    except JWTError:
+        raise credentials_exception
