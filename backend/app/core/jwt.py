@@ -5,15 +5,27 @@ from jose import JWTError, jwt
 from fastapi import HTTPException, status
 from app.config import settings # Our configuration with SECRET_KEY and ALGORITHM
 from pydantic import BaseModel
+from app.models.user import User as DBUser
 
 # Token payload structure (optional, but good for clarity)
 class TokenData(BaseModel):
     username: Optional[str] = None
     scopes: List[str] = [] # For role-based authorization later
+    id: Optional[int] = None
+    email: Optional[str] = None
+    is_educator: Optional[bool] = None
+    is_active: Optional[bool] = None
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(user: DBUser, expires_delta: Optional[timedelta] = None):
     """Creates a JWT access token."""
-    to_encode = data.copy()
+    to_encode = {
+        "sub": user.username,
+        "id": user.id,
+        "email": user.email,
+        "is_educator": user.is_educator,
+        "is_active": user.is_active,
+        "scopes": ["user", "educator"] if user.is_educator else ["user"],
+    }
     if expires_delta:
         expire = datetime.now(timezone.utc) + expires_delta
     else:
