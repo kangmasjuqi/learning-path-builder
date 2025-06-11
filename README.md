@@ -135,7 +135,7 @@ This interface allows you to explore all available endpoints, test requests, and
 
 The next phase of this project will focus on developing a dynamic and user-friendly frontend using Next.js. Key features to be implemented include:
 
-* User registration and login forms.
+* [DONE] User registration and login forms.
 * Student and Educator dashboards.
 * Interactive course listings and detailed course pages.
 * Lesson content display (text, video).
