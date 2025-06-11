@@ -33,16 +33,30 @@ export default function LoginPage() {
     try {
       // Careful: FastAPI's OAuth2PasswordRequestForm expects form-encoded data, not JSON.
       // URLSearchParams correctly formats this for axios.
-      const loginResponse = await apiClient.post('/token', new URLSearchParams({
-        username: username,
-        password: password,
-        grant_type: 'password' // Required by OAuth2PasswordRequestForm
-      }));
+        const loginResponse = await apiClient.post(
+            '/token',
+            new URLSearchParams({
+                username,
+                password,
+                grant_type: 'password',
+            }),
+            {
+                headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                },
+            }
+        );
+
       const { access_token } = loginResponse.data;
 
       // Clever: After getting the token, immediately fetch full user details.
       // Our JWT only contains some user data, but `/users/me` gives the complete `UserOut` schema.
-      const userResponse = await apiClient.get('/users/me');
+        const userResponse = await apiClient.get('/users/me', {
+        headers: {
+            Authorization: `Bearer ${access_token}`,
+        },
+        });
+        
       const user = userResponse.data; // This is the UserOut schema from your backend
 
       // Dispatch success action with full user data and access token
