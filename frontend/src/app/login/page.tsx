@@ -14,14 +14,14 @@ export default function LoginPage() {
   const [password, setPassword] = useState<string>('');
   const dispatch: AppDispatch = useDispatch(); // Get the Redux dispatch function
   // Select relevant state from Redux store for loading, error, and authentication status
-  const { loading, error, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { loading, error, isAuthenticated, user } = useSelector((state: RootState) => state.auth); // <<< ADD 'user' here
   const router = useRouter(); // Initialize Next.js router
 
   // Clever: Redirect authenticated users away from the login page
   // This runs on every render to ensure the user is always on the correct page
-  if (isAuthenticated) {
+  if (isAuthenticated && user) { // <<< Ensure user object is not null before checking its properties
     // Use replace to prevent going back to login page with browser's back button
-    router.replace('/dashboard/student'); // Default dashboard for now, will be dynamic later
+    router.replace(user.is_educator ? '/dashboard/educator' : '/dashboard/student'); // <<< DYNAMIC REDIRECTION
     return null; // Don't render the login form if redirecting
   }
 
@@ -51,19 +51,16 @@ export default function LoginPage() {
 
       // Clever: After getting the token, immediately fetch full user details.
       // Our JWT only contains some user data, but `/users/me` gives the complete `UserOut` schema.
-        const userResponse = await apiClient.get('/users/me', {
+      const userResponse = await apiClient.get('/users/me', {
         headers: {
             Authorization: `Bearer ${access_token}`,
         },
-        });
+      });
         
-      const user = userResponse.data; // This is the UserOut schema from your backend
+      const fetchedUser = userResponse.data; // Renamed to avoid conflict with `user` from useSelector
 
-      // Dispatch success action with full user data and access token
-      dispatch(loginSuccess({ user, accessToken: access_token }));
-
-      // Navigate based on user role (educator or student)
-      router.replace(user.is_educator ? '/dashboard/educator' : '/dashboard/student');
+      dispatch(loginSuccess({ user: fetchedUser, accessToken: access_token })); // Use fetchedUser here
+        
     } catch (err: any) {
       // Careful: Handle API errors gracefully
       const errorMessage = err.response?.data?.detail || "Login failed. Please check your credentials.";
